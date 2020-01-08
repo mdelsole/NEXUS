@@ -30,6 +30,9 @@ class Neuron:
         # Time step constant for membrane potential update
         self.vm_dt = 1.0 / 3.3
 
+        # Time step constant for integration. 1 = 1 msec
+        self.integ_dt = 1
+
         ########### Input channel constants ###########
 
         # Excitatory max conductance
@@ -126,6 +129,10 @@ class Neuron:
         # Adaptation current
         self.adapt_curr = 0
 
+
+    ################  Utility functions  ################
+
+
     # Add an input for the next step
     def add_excitatory_inputs(self, input_act):
         self.excitatory_inputs.append(input_act)
@@ -176,6 +183,25 @@ class Neuron:
         else:
             return float(scipy.interpolate.interp1d(xs, conv, kind='linear', fill_value='extrapolate')(v_m))
 
-    # Calculate net input. Execute before every step
+
+    ################  Neuron "integrate and fire" functions  ################
+
+
+    # Calculate net excitatory input. Execute before every step
     def calculate_net_input(self):
+
+        # Total instantaneous excitatory input to the neuron
+        net_raw_input = 0.0
+
+        if len(self.excitatory_inputs) > 0:
+            # Total input = sum of excitatory inputs in this current step
+            net_raw_input = sum(self.excitatory_inputs)
+
+            # Clear the excitatory inputs for the next step
+            self.excitatory_inputs = []
+
+        self.g_e = self.integ_dt * self.net_in_dt * (net_raw_input - self.g_e)
+
+    # One step of the neuron
+    def step(self, unit, phase, g_i=0.0, dt_integ=1):
         pass
