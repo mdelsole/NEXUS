@@ -14,22 +14,18 @@ OUTPUT = 2
 
 
 class Neuron:
-    def __init__(self, params=None, neuron_type=HIDDEN, **kwargs):
+    def __init__(self, neuron_type=HIDDEN,
+                 log_names=('net_in', 'I_net', 'v_m', 'act', 'v_m_eq', 'adapt_curr'), **kwargs):
 
         # What type of neuron this is
         self.neuron_type = neuron_type
-
-        # Call reset to initialize the neuron
-        self.reset()
 
         ########### Time step constants ###########
 
         # Time step constant for net input update
         self.net_in_dt = 1.0 / 1.4
-
         # Time step constant for membrane potential update
         self.v_m_dt = 1.0 / 3.3
-
         # Time step constant for integration. 1 = 1 msec
         self.integ_dt = 1
 
@@ -46,6 +42,9 @@ class Neuron:
 
         # Leak constant current
         self.g_l = 1.0
+
+        self.g_e = 0
+        self.net_in = self.g_bar_e * self.g_e
 
         ########### Driving potential constants ###########
 
@@ -92,7 +91,7 @@ class Neuron:
         self.adapt_dt = 1.0 / 144.0
 
         # TODO: Gain that voltage produces, driving the adaptation current
-        self.vm_gain = 0.04
+        self.v_m_gain = 0.04
 
         # Value the adaptation current gains after spiking
         self.spike_gain = 0.00805
@@ -104,6 +103,13 @@ class Neuron:
         for key, value in kwargs.items():
             assert hasattr(self, key), 'the {} parameter does not exist'.format(key)
             setattr(self, key, value)
+
+        # Logs for testing/visualization
+        self.log_names = log_names
+        self.logs = {name: [] for name in self.log_names}
+
+        # Call reset to initialize the neuron
+        self.reset()
 
     # Reset the neuron's state. Called at creation and at the end of every cycle
     def reset(self):
@@ -252,9 +258,11 @@ class Neuron:
         self.act += self.integ_dt * self.v_m_dt * (activity - self.act)
 
         # Update adaptation
-        self.adapt_curr += self.integ_dt * (self.adapt_dt * (self.vm_gain * (self.v_m - self.e_l) - self.adapt_curr)
+        self.adapt_curr += self.integ_dt * (self.adapt_dt * (self.v_m_gain * (self.v_m - self.e_l) - self.adapt_curr)
                 + self.did_spike * self.spike_gain)
 
+        # Update logs
+        self.update_logs()
 
 
     # Calculate net current, factoring in inhibition + leak. Will be called from within step
@@ -269,13 +277,32 @@ class Neuron:
 
         v_m_eff = self.v_m_eq
 
+        net_curr = 0.0
         # Iterative approach
         for _ in range(steps):
-            I_net = (gc_e * (self.e_e - v_m_eff)
+            net_curr = (gc_e * (self.e_e - v_m_eff)
                      + gc_i * (self.e_i - v_m_eff)
                      + gc_l * (self.e_l - v_m_eff)
                      - self.adapt_curr)
 
-            v_m_eff += self.integ_dt/steps * self.v_m_dt * I_net
+            v_m_eff += self.integ_dt/steps * self.v_m_dt * net_curr
 
-        return I_net
+        return net_curr
+
+
+    ################  Logs/config  ################
+
+    # Update our logs with the current state after each step
+    def update_logs(self):
+        for name in self.logs.keys():
+            self.logs[name].append(getattr(self, name))
+
+    # Display variable/constant values
+    def show_config(self):
+        print('Parameters:')
+        for name in ['v_m_dt', 'net_in_dt', 'g_l', 'g_bar_e', 'g_bar_l', 'g_bar_i',
+                     'e_e', 'e_l', 'e_i', 'act_thr', 'act_gain']:
+            print('   {}: {:.2f}'.format(name, getattr(self, name)))
+        print('State:')
+        for name in ['g_e', 'I_net', 'v_m', 'act', 'v_m_eq']:
+            print('   {}: {:.2f}'.format(name, getattr(self, name)))
