@@ -28,7 +28,7 @@ class Neuron:
         self.net_in_dt = 1.0 / 1.4
 
         # Time step constant for membrane potential update
-        self.vm_dt = 1.0 / 3.3
+        self.v_m_dt = 1.0 / 3.3
 
         # Time step constant for integration. 1 = 1 msec
         self.integ_dt = 1
@@ -91,8 +91,11 @@ class Neuron:
         # Time step constant for adaptation current
         self.adapt_dt = 1.0 / 144.0
 
-        # TODO: Gain that voltage produces on adaptation
+        # TODO: Gain that voltage produces, driving the adaptation current
         self.vm_gain = 0.04
+
+        # Value the adaptation current gains after spiking
+        self.spike_gain = 0.00805
 
         # If the table has been precomputed
         self.nnx1_table = None
@@ -114,13 +117,14 @@ class Neuron:
         # Net current
         self.I_net = 0
 
-        # TODO: Net current, equilibrium version
+        # TODO: Net current, equilibrium version. Rate-coded version
+
         self.I_net_r = self.I_net
 
         # Membrane potential
         self.v_m = self.v_m_init
 
-        # Membrane potential (equilibrium version)
+        # Equilibrium membrane potential (the value that is settled at)
         self.v_m_eq = self.v_m
 
         # Activity of the neuron, a.k.a. the firing rate
@@ -200,8 +204,78 @@ class Neuron:
             # Clear the excitatory inputs for the next step
             self.excitatory_inputs = []
 
+        # Update g_e
+        # TODO: net_input?
         self.g_e = self.integ_dt * self.net_in_dt * (net_raw_input - self.g_e)
 
-    # One step of the neuron
-    def step(self, unit, phase, g_i=0.0, dt_integ=1):
-        pass
+    # One step of the neuron. Update activity of the neuron
+    def step(self, phase, g_i=0.0, dt_integ=1):
+
+        # Calculate net current
+        self.I_net = self.calculate_net_current(g_i, steps=2)
+        # TODO: Rate-code version of I_net, to provide adequate coupling with v_m_eq
+        self.I_net_r = self.calculate_net_current(g_i, steps=1)
+
+        # Update v_m (membrane potential) and v_m_eq (equilibrium membrane potential)
+        self.v_m += self.integ_dt * self.v_m_dt * self.I_net
+        self.v_m_eq += self.integ_dt * self.v_m_dt * self.I_net_r
+
+        # Reset v_m if it crosses the threshold
+        if self.v_m > self.act_thr:
+            self.did_spike = 1
+
+            # Reset v_m to the reset value
+            self.v_m = self.v_m_r
+            self.I_net = 0.0
+        else:
+            self.did_spike = 0
+
+        # Compute new_act from v_m_eq, b/c rate-coded
+        if self.v_m_eq <= self.act_thr:
+
+            # Activity = nnx1(how close v_m_eq is to threshold for activation)
+            activity = self.nxx1(self.v_m_eq-self.act_thr)
+        else:
+
+            # Find g_e_theta, the level of excitatory input conductance that would make v_m_eq = act_thr
+            gc_e = self.g_bar_e * self.g_e
+            gc_i = self.g_bar_i * g_i
+            gc_l = self.g_bar_l * self.g_l
+            # Theta for g_e; the level g_e has to reach for the neuron to fire
+            g_e_threshold = (gc_i * (self.e_i - self.act_thr) + gc_l * (self.e_l - self.act_thr)
+                       - self.adapt_curr) / (self.act_thr - self.e_e)
+
+            # Neuron's activation is the result of nnx1(g_e - g_e_threshold)
+            activity = self.nxx1(gc_e - g_e_threshold)
+
+        # Update activity
+        self.act += self.integ_dt * self.v_m_dt * (activity - self.act)
+
+        # Update adaptation
+        self.adapt_curr += self.integ_dt * (self.adapt_dt * (self.vm_gain * (self.v_m - self.e_l) - self.adapt_curr)
+                + self.did_spike * self.spike_gain)
+
+
+
+    # Calculate net current, factoring in inhibition + leak. Will be called from within step
+    def calculate_net_current(self, g_i, steps=1):
+
+        # Exctitatory conductance
+        gc_e = self.g_bar_e * self.g_e
+        # Inhibitory conductance. g_i will be input gotten from the layer handler class
+        gc_i = self.g_bar_i * g_i
+        # Leak conductance
+        gc_l = self.g_bar_l * self.g_l
+
+        v_m_eff = self.v_m_eq
+
+        # Iterative approach
+        for _ in range(steps):
+            I_net = (gc_e * (self.e_e - v_m_eff)
+                     + gc_i * (self.e_i - v_m_eff)
+                     + gc_l * (self.e_l - v_m_eff)
+                     - self.adapt_curr)
+
+            v_m_eff += self.integ_dt/steps * self.v_m_dt * I_net
+
+        return I_net
