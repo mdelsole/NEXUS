@@ -1,10 +1,10 @@
 # NEXUS
 
-Nexus: a specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
+**Nexus**: A specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
 
 This is a biologically-inspired approach to creating a neural network.
 
-### Algorithms
+## Algorithms
 Singular neuron level:
 
 - [x] Hodgkin-huxley model of neuron membrane potential
