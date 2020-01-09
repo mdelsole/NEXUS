@@ -8,9 +8,10 @@ receiver.show_config()
 
 inputs = 10*[0.0] + 150*[1.0] + 40*[0.0]
 
+
 for g_e in inputs:
     receiver.add_excitatory_inputs(g_e)
     receiver.calculate_net_input()
-    receiver.step(phase='minus')
+    receiver.step('minus')
 
 graphs.unit_activity(receiver.logs)

@@ -99,6 +99,7 @@ def xx1(xs, y_xx1, y_noisy_xx1, title='', width=400, height=400):
 
 default_names = ('net_in', 'v_m', 'I_net', 'act', 'v_m_eq', 'adapt_curr')
 
+
 def _unit_activity_aux(data, names=default_names):
     """Display graph of best choice"""
 
@@ -127,10 +128,12 @@ def _unit_activity_aux(data, names=default_names):
 
     return fig, [line.data_source.data for line in lines]
 
+
 def unit_activity(data, names=default_names):
     """Display graph of best choice"""
     fig, lines = _unit_activity_aux(data, names=names)
     bkp.show(fig)
+
 
 def unit_activity_interactive(data, names=default_names, figdata=None):
     if figdata is None:
