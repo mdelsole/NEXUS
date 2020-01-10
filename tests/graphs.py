@@ -8,11 +8,28 @@ from bokeh.models.mappers import LinearColorMapper
 
 import ipywidgets.widgets
 from ipywidgets.widgets import fixed, IntSlider, FloatSlider
+# from ipywidgets.widgets import SelectionSlider # for ipywidgets 5.x
+
+
+    ## Disable autoscrolling
 
 from IPython.display import display, Javascript
 
 bkp.output_file("test.html")
 
+
+    ## Larger labels
+
+# from IPython.display import HTML
+#
+# display(HTML('''<style>
+#     .widget-label { min-width: 20ex !important; }
+# </style>'''))
+
+
+    ## Load bokeh for jupyter
+
+bkp.output_notebook(hide_banner=True)
 
 
     ## Better default figures
@@ -97,8 +114,7 @@ def xx1(xs, y_xx1, y_noisy_xx1, title='', width=400, height=400):
     bkp.show(fig)
 
 
-default_names = ('net_in', 'v_m', 'I_net', 'act', 'v_m_eq', 'adapt_curr')
-
+default_names = ('net_input', 'v_m', 'I_net', 'act', 'v_m_eq', 'adapt_curr')
 
 def _unit_activity_aux(data, names=default_names):
     """Display graph of best choice"""
@@ -108,8 +124,10 @@ def _unit_activity_aux(data, names=default_names):
                  plot_width=700, plot_height=450, tools="")
     fig.title.text = "Unit activity"
 
-    colors = {'net_in':'black', 'v_m':'blue', 'I_net':'red', 'act':'green',
-              'v_m_eq':'grey', 'adapt_curr':'darkred'}
+    colors = {'net_input':'black', 'v_m':'blue', 'I_net':'red', 'act':'green',
+              'v_m_eq':'grey', 'adapt_curr':'darkred',
+              'avg_ss': 'cyan', 'avg_s': 'blue',
+              'avg_m': 'red', 'avg_s_eff': 'orange'}
 
     lines = []
     for name in names:
@@ -128,12 +146,10 @@ def _unit_activity_aux(data, names=default_names):
 
     return fig, [line.data_source.data for line in lines]
 
-
 def unit_activity(data, names=default_names):
     """Display graph of best choice"""
     fig, lines = _unit_activity_aux(data, names=names)
     bkp.show(fig)
-
 
 def unit_activity_interactive(data, names=default_names, figdata=None):
     if figdata is None:
@@ -142,7 +158,7 @@ def unit_activity_interactive(data, names=default_names, figdata=None):
         return handle, fig, lines
     else:
         handle, fig, lines = figdata
-        names = ['net_in', 'v_m', 'I_net', 'act']
+        names = ['net_input', 'v_m', 'I_net', 'act']
         for name, line in zip(names, lines):
             line['y'] = data[name]
         bokeh.io.push_notebook(handle=handle)
