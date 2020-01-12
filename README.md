@@ -31,5 +31,6 @@ Not much, but hey I'm only one person
 
 ## Sources
 * Hodgkin-Huxely Model: https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model
-* Adaptive Exponential: https://www.ncbi.nlm.nih.gov/pubmed/16014787 
+* Adaptive Exponential Model: https://www.ncbi.nlm.nih.gov/pubmed/16014787 
   * More usefully: http://www.scholarpedia.org/article/Adaptive_exponential_integrate-and-fire_model
+* Spike-Timing-Dependent Plasticity: https://www.jneurosci.org/content/jneuro/28/13/3310.full.pdf
