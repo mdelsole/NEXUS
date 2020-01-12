@@ -86,31 +86,42 @@ class Neuron:
 
         # TODO: Bias?
 
-        ########### Averages ###########
+        ########### Averages for learning ###########
 
-        # TODO: Average parameters
         self.avg_init = 0.15
+        self.avg_l_init = 0.4
+
+        # To compute XCAL from the neuron, update these (cascaded) average variables
+        # Base average to compute avg_s over
+        self.avg_ss = self.avg_init
+        # Short-term average synaptic activity
+        self.avg_s = self.avg_init
+        # Medium-term average synaptic activity
+        self.avg_m = self.avg_init
+        # Long-term average synaptic activity
+        self.avg_l = self.avg_l_init
+
+        # Rate constants for updating the running averages
         self.avg_ss_dt = 0.5
         self.avg_s_dt = 0.5
         self.avg_m_dt = 0.1
-        # Computed once every cycle
+
+        # Computed once every cycle. Thus the full integration (reaching 1) will be complete after 10 cycles
         self.avg_l_dt = 0.1
-        self.avg_l_init = 0.4
+
         self.avg_l_min = 0.2
         self.avg_l_gain = 2.5
+
         self.avg_m_in_s = 0.1
 
         # TODO: Min/max for avg_l_lrn
         self.avg_lrn_min = 0.0001
         self.avg_lrn_max = 0.5
 
-        # TODO: Averages of the activity
-        self.avg_ss = self.avg_init
-        self.avg_s = self.avg_init
-        self.avg_m = self.avg_init
-        self.avg_l = self.avg_l_init
         # Linear mixing of avg_s and avg_m
         self.avg_s_eff = 0.0
+
+        ########### Utility ###########
 
         for key, value in kwargs.items():
             assert hasattr(self, key), 'the {} parameter does not exist'.format(key)
@@ -122,6 +133,7 @@ class Neuron:
         self.log_names = log_names
         self.logs = {name: [] for name in self.log_names}
 
+        # Reset to initialize the neuron
         self.reset()
 
     # Reset the neuron's state. Called at creation and at the beginning of every cycle
@@ -324,14 +336,14 @@ class Neuron:
     ################  Updating averages of activation (for learning)  ################
 
 
-    # TODO: Update all the averages except long-term at the end of every step
+    # Update all the averages except long-term at the end of every step, for learning
     def update_avgs(self):
         self.avg_ss += self.integ_dt * self.avg_ss_dt * (self.act_nd - self.avg_ss)
         self.avg_s += self.integ_dt * self.avg_s_dt * (self.avg_ss - self.avg_s )
         self.avg_m += self.integ_dt * self.avg_m_dt * (self.avg_s  - self.avg_m )
         self.avg_s_eff = self.avg_m_in_s * self.avg_m + (1 - self.avg_m_in_s) * self.avg_s
 
-    # TODO: Update the long-term average at the end of every cycle
+    # Long-term average is separate, as it gets calculated at the end of every cycle instead
     def update_avg_l(self):
         self.avg_l += self.avg_l_dt * (self.avg_l_gain * self.avg_m - self.avg_l)
         self.avg_l = max(self.avg_l, self.avg_l_min)
