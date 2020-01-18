@@ -2,9 +2,9 @@
 
 **Nexus**: A specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
 
-This is a biologically-inspired approach to creating a neural network.
+This is a WIP biologically-inspired approach to creating a neural network for object recognition, and eventually artificial imagination.
 
-## Algorithms and Mechanics
+## Architecture: Algorithms and Mechanics
 Singular neuron level:
 
 - [x] Hodgkin-huxley model of neuron membrane potential updates
@@ -12,22 +12,42 @@ Singular neuron level:
 
 Synapse level:
 
-- [ ] Spike-timing-dependent plasticity
-- [ ] Long-term depression and long-term potentiation
+- [x] Spike-timing-dependent plasticity
+- [x] Long-term depression and long-term potentiation
 
-Singular area level:
+Singular layer level:
+- [x] Self-organizing learning via intrinsic biological properties of synapses
+- [x] Inhibition
 
-- [ ] Self-organizing learning via intrinsic biological properties of synapses
-- [ ] Inhibition
+Cross-layer (network) level:
 
-Cross-area (network) level:
+- [x] Cross-layer synapse projections
+- [x] Bi-directional connectivity
+- [ ] Error-driven backpropagation learning (still researching biological plausibility)
 
-- [ ] Bi-directional connectivity
+Code needs to be cleaned up and optimized, but it works.
+
+## Visual Pathway
+### Relevant Areas:
+Ventral Stream ("What" recognition)
+- [ ] LGN
+- [ ] V1
+- [ ] V2
+- [ ] V4
+- [ ] PIT
+- [ ] AIT
+
+Dorsal Stream ("Where/how" recognition, branching off of V1)
+- [ ] ??? (Future work)
 
 ## UI Features
 Not much, but hey I'm only one person
 
 - [x] Graph of individual neuron test firing
+- [ ] Runnable
+- [ ] Parameter modification
+- [ ] Network visualization
+- [ ] Different view tabs
 
 ## Sources
 * Hodgkin-Huxely Model: https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model
