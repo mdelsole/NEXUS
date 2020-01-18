@@ -14,3 +14,4 @@ for g_e in inputs:
     receiver.calculate_net_input()
     receiver.step('minus')
 
+graphs.unit_activity(receiver.logs)

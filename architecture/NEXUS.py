@@ -7,7 +7,7 @@ Handler for the network as a whole
 
 class Network:
 
-    def __init__(self, layers=(), projections=()):
+    def __init__(self, areas=(), projections=()):
 
         self.quarter_size = 25
 
@@ -23,9 +23,9 @@ class Network:
         # Current phase
         self.phase = 'minus'
 
-        # Layers of the network
-        self.layers = list(layers)
-        # Projections between layers of the network
+        # Areas of the network
+        self.areas = list(areas)
+        # Projections between areas of the network
         self.projections = list(projections)
         # Inputs and outputs of the network
         self._inputs, self._outputs = {}, {}
@@ -47,49 +47,49 @@ class Network:
         # TODO: Enable real-time projection adding/deleting?
         self.build()
 
-    # Add a layer to the network
-    def add_layer(self, layer):
+    # Add a area to the network
+    def add_area(self, area):
 
-        # Add the layer to the network's layer master list
-        self.layers.append(layer)
+        # Add the area to the network's area master list
+        self.areas.append(area)
 
     # Pre-compute necessary data structures
     # Network building must be done anytime network structure (synapses, projections, etc.) is changed
     def build(self):
 
-        # Net input scaling for different layers and their different levels of activation
-        for layer in self.layers:
+        # Net input scaling for different areas and their different levels of activation
+        for area in self.areas:
 
             # Calculate projection input scaling (normalization)
-            rel_sum = sum(connection.wt_scale_rel for connection in layer.incoming_projections)
+            rel_sum = sum(connection.wt_scale_rel for connection in area.incoming_projections)
 
             # Apply projection input scaling
-            for connection in layer.incoming_projections:
+            for connection in area.incoming_projections:
                 connection.wt_scale_rel_eff = connection.wt_scale_rel / rel_sum
 
 
     ################  Utility functions  ################
 
 
-    # Get a layer by its name. Name conflict returns oldest layer
-    def _get_layer(self, name):
-        for layer in self.layers:
-            if layer.name == name:
-                return layer
-        raise ValueError("layer '{}' not found.".format(name))
+    # Get a area by its name. Name conflict returns oldest area
+    def _get_area(self, name):
+        for area in self.areas:
+            if area.name == name:
+                return area
+        raise ValueError("area '{}' not found.".format(name))
 
     # Set input activities, done at the beginning of all quarters
     def set_inputs(self, act_map):
 
         # TODO: Set inputs according to the act_map
-        # act_map = dictionary with layer names as keys, and activities arrays as values
+        # act_map = dictionary with area names as keys, and activities arrays as values
         self._inputs = act_map
 
     # Set output activities, done at the beginning of all quarters
     def set_outputs(self, act_map):
 
         # TODO: Set outputs according to the act_map
-        # act_map = dictionary with layer names as keys, and activities arrays as values
+        # act_map = dictionary with area names as keys, and activities arrays as values
         self._outputs = act_map
 
     # TODO: Compute the sum of squared error (SSE) for prediction. Runs after minus phase finishes
@@ -97,7 +97,7 @@ class Network:
 
         sse = 0
         for name, activities in self._outputs.items():
-            for act, neuron in zip(activities, self._get_layer(name).neurons):
+            for act, neuron in zip(activities, self._get_area(name).neurons):
                 sse += (act - neuron.act_m)**2
         return sse
 
@@ -126,18 +126,18 @@ class Network:
 
             # If it's the start of a cycle
             if self.quarter_num == 1:
-                # Reset all layers
-                for layer in self.layers:
-                    layer.cycle_init()
+                # Reset all areas
+                for area in self.areas:
+                    area.cycle_init()
                 # TODO: Force activities for inputs
                 for name, activities in self._inputs.items():
-                    self._get_layer(name).force_activity(activities)
+                    self._get_area(name).force_activity(activities)
 
             # If it's the start of the plus phase
             elif self.quarter_num == 4:
                 # TODO: Force activities for outputs
                 for name, activities in self._outputs.items():
-                    self._get_layer(name).force_activity(activities)
+                    self._get_area(name).force_activity(activities)
 
     # Check if network is at a special moment requiring action after executing the step
     def _post_step(self):
@@ -177,8 +177,8 @@ class Network:
 
         for conn in self.projections:
             conn.step()
-        for layer in self.layers:
-            layer.step(self.phase)
+        for area in self.areas:
+            area.step(self.phase)
         self.step_count += 1
         self.total_steps   += 1
 
@@ -192,8 +192,8 @@ class Network:
     def end_minus_phase(self):
 
         # Store the neuron activity as the medium-term average synaptic activity
-        for layer in self.layers:
-            for neuron in layer.neurons:
+        for area in self.areas:
+            for neuron in area.neurons:
                 neuron.act_m = neuron.act
 
         # Set the current phase to plus
@@ -207,8 +207,8 @@ class Network:
             conn.learn()
 
         # Update the long-term average synaptic activity, done at the end of every cycle
-        for layer in self.layers:
-            for neuron in layer.neurons:
+        for area in self.areas:
+            for neuron in area.neurons:
                 neuron.update_avg_l()
 
         # Set the current phase to minus

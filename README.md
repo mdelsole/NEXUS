@@ -15,12 +15,12 @@ Synapse level:
 - [ ] Spike-timing-dependent plasticity
 - [ ] Long-term depression and long-term potentiation
 
-Singular layer level:
+Singular area level:
 
 - [ ] Self-organizing learning via intrinsic biological properties of synapses
 - [ ] Inhibition
 
-Cross-layer (network) level:
+Cross-area (network) level:
 
 - [ ] Bi-directional connectivity
 

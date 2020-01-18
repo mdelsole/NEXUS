@@ -1,6 +1,6 @@
 """
 
-Singular layer dynamics
+Singular area dynamics
 
 """
 
@@ -9,25 +9,25 @@ import numpy as np
 from .neuron import Neuron, INPUT, HIDDEN, OUTPUT
 
 
-# TODO: Become area, be an input/hidden/output layer
-class Layer:
+# TODO: Become area, be an input/hidden/output area
+class Area:
 
     def __init__(self, size, neuron_type=HIDDEN, name=None, **kwargs):
-        # What type of neurons are in this layer
+        # What type of neurons are in this area
         self.neuron_type = neuron_type
 
-        # Set the name of this layer
+        # Set the name of this area
         self.name = name
 
-        # Create the neurons of the layer, with number denoted by input parameter 'size'
+        # Create the neurons of the area, with number denoted by input parameter 'size'
         self.neurons = [Neuron(neuron_type=neuron_type) for _ in range(size)]
 
-        # Projections from this layer to other layers
+        # Projections from this area to other areas
         self.outgoing_projections = []
-        # Projections to this layer from other layers
+        # Projections to this area from other areas
         self.incoming_projections = []
 
-        # Current step count for layer
+        # Current step count for area
         self.step_count = 0
 
 
@@ -46,7 +46,7 @@ class Layer:
         # Time-step constant for integration of feed-back inhibition
         self.fb_dt = 1 / 1.4
 
-        # TODO: In-out layers: 1.0, 1.0, 1.8. Hidden Layers: 1.0, 0.5, 2.0?
+        # TODO: In-out areas: 1.0, 1.0, 1.8. Hidden Areas: 1.0, 0.5, 2.0?
         # Feed-forward inhibition gain factor (for scaling)
         self.ff = 1.0
         # Feed-back inhibition gain factor (for scaling)
@@ -54,8 +54,8 @@ class Layer:
         # Overall inhibition gain factor
         self.inhib_gain = 1.8
 
-        # Decay factor for fbi and ffi. If 1.0, fbi and ffi will reset to 0 at start of every cycle
-        self.cycle_decay = 1.0
+        # Reset calculation value for fbi and ffi. If 1.0, fbi and ffi will reset to 0 at start of every cycle
+        self.inhib_reset = 1.0
 
         # Threshold for activating feed-forward inhibition
         self.ff0 = 0.1
@@ -73,7 +73,7 @@ class Layer:
         # Time constant for integrating act_p_avg
         self.avg_act_tau = False  # time constant for integrating act_p_avg
 
-        # Average activity of the layer. Computed after every step
+        # Average activity of the area. Computed after every step
         self.avg_act = 0.0
         self.avg_act_p_eff = self.avg_act_targ_init
 
@@ -86,21 +86,15 @@ class Layer:
         # Log inhibitory conductance
         self.logs = {'gc_i': []}
 
-    # Return the matrix of activities for neurons in this layer
+    # Return the matrix of activities for neurons in this area
     @property
     def activities(self):
         return [n.act for n in self.neurons]
 
-    # Return the matrix of net excitatory input for neurons in this layer
+    # Return the matrix of net excitatory input for neurons in this area
     @property
-    def g_e(self):
+    def net_inputs(self):
         return [n.g_e for n in self.neurons]
-
-    # Add layer's excitatory inputs to the layer's neurons
-    def add_excitatory(self, inputs):
-        assert len(inputs) == len(self.neurons)
-        for n, net_raw in zip(self.neurons, inputs):
-            n.add_excitatory(net_raw)
 
     # Set the neuron's activities equal to the inputs
     def force_activity(self, activities):
@@ -112,14 +106,14 @@ class Layer:
     ################  Inhibition  ################
 
 
-    # Compute the inhibition for the layer
+    # Compute the inhibition for the area
     def inhibition(self):
 
         if self.lay_inhib:
-            # Calculate net input for feed-forward inhibition
-            netin = [u.g_e for u in self.neurons]
+            # Retrieve net inputs of neurons in this area for feed-forward inhibition
+            _net_inputs = self.net_inputs
             # Calculate feed-forward inhibition
-            self.ffi = self.ff * max(0, np.mean(netin) - self.ff0)
+            self.ffi = self.ff * max(0, np.mean(_net_inputs) - self.ff0)
 
             # Calculate feed-back inhibition
             self.fbi += self.fb_dt * (self.fb * self.avg_act - self.fbi)
@@ -133,46 +127,46 @@ class Layer:
     ################  Temporal process control  ################
 
 
-    # Advance the layer one time-step, and all the neurons in it
+    # Advance the area one time-step, and all the neurons in it
     def step(self, phase):
 
-        # Calculate the net inputs for this layer
+        # Calculate the net inputs for the neurons this area
         for n in self.neurons:
             n.calculate_net_input()
 
-        # TODO: If minus phase, perform inhibition
+        # Inhibition happens during minus phase; minus phase: network runs free, plus phase: network is clamped to value
         if phase == 'minus':
             self.gc_i = self.inhibition()
 
-        # Advance the neurons in the layer one time-step
+        # Advance the neurons in the area one time-step, set their inhibition
         for n in self.neurons:
             n.step(phase, g_i=self.gc_i)
 
-        # Compute the average activity of the layer
+        # Compute the average activity of the area
         self.avg_act = np.mean(self.activities)
 
         # Update logs
         self.update_logs()
 
-        # Indicate that the layer has been advanced one time-step
+        # Indicate that the area has been advanced one time-step
         self.step_count += 1
 
-    # Initialize the layer for a new cycle
+    # Initialize the area for a new cycle
     def cycle_init(self):
 
         # Reset all neurons
         for u in self.neurons:
             u.reset()
 
-        # TODO: Decay fbi
-        self.ffi -= self.cycle_decay * self.ffi
-        self.fbi -= self.cycle_decay * self.fbi
+        # Reset inhibition; change inhib_reset to value below 1.0 to make it not reset to zero
+        self.ffi -= self.inhib_reset * self.ffi
+        self.fbi -= self.inhib_reset * self.fbi
 
 
     ################  Logs/config  ################
 
 
-    # Show the layer's configurations
+    # Show the area's configurations
     def show_config(self):
         print('Parameters:')
         for name in ['fb_dt', 'ff0', 'ff', 'fb', 'inhib_gain']:
@@ -181,6 +175,6 @@ class Layer:
         for name in ['gc_i', 'fbi', 'ffi']:
             print('   {}: {:.2f}'.format(name, getattr(self, name)))
 
-    # Record the layer's current state. Called after each step
+    # Record the area's current state. Called after each step
     def update_logs(self):
         self.logs['gc_i'].append(self.gc_i)
