@@ -2,7 +2,7 @@
 
 **Nexus**: A specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
 
-This is a biologically-inspired approach to creating a neural network.
+This is a WIP biologically-inspired approach to creating a neural network.
 
 ## Architecture: Algorithms and Mechanics
 Singular neuron level:
@@ -21,7 +21,9 @@ Singular layer level:
 
 Cross-layer (network) level:
 
+- [x] Cross-layer synapse projections
 - [x] Bi-directional connectivity
+- [ ] Error-driven backpropagation learning (still researching biological plausibility)
 
 Code needs to be cleaned up and optimized, but it works.
 
