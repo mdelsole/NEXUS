@@ -158,7 +158,7 @@ class ProjectionHeaderParam(pTypes.GroupParameter):
 ################  Parameters  ################
 
 
-# Add an area
+# Add an area 
 class AreaParam(pTypes.GroupParameter):
     def __init__(self, **kwds):
 
