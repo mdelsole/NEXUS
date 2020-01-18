@@ -1,0 +1,186 @@
+"""
+
+Singular layer dynamics
+
+"""
+
+import numpy as np
+
+from .neuron import Neuron, INPUT, HIDDEN, OUTPUT
+
+
+# TODO: Become area, be an input/hidden/output layer
+class Layer:
+
+    def __init__(self, size, neuron_type=HIDDEN, name=None, **kwargs):
+        # What type of neurons are in this layer
+        self.neuron_type = neuron_type
+
+        # Set the name of this layer
+        self.name = name
+
+        # Create the neurons of the layer, with number denoted by input parameter 'size'
+        self.neurons = [Neuron(neuron_type=neuron_type) for _ in range(size)]
+
+        # Projections from this layer to other layers
+        self.outgoing_projections = []
+        # Projections to this layer from other layers
+        self.incoming_projections = []
+
+        # Current step count for layer
+        self.step_count = 0
+
+
+        ########### Inhibition ###########
+
+        # Enable inhibition or not
+        self.lay_inhib = True
+
+        # Inhibitory conductance
+        self.gc_i = 0.0
+        # Feed-forward component of inhibition
+        self.ffi = 0.0
+        # Feed-back component of inhibition
+        self.fbi = 0.0
+
+        # Time-step constant for integration of feed-back inhibition
+        self.fb_dt = 1 / 1.4
+
+        # TODO: In-out layers: 1.0, 1.0, 1.8. Hidden Layers: 1.0, 0.5, 2.0?
+        # Feed-forward inhibition gain factor (for scaling)
+        self.ff = 1.0
+        # Feed-back inhibition gain factor (for scaling)
+        self.fb = 1.0
+        # Overall inhibition gain factor
+        self.inhib_gain = 1.8
+
+        # Decay factor for fbi and ffi. If 1.0, fbi and ffi will reset to 0 at start of every cycle
+        self.cycle_decay = 1.0
+
+        # Threshold for activating feed-forward inhibition
+        self.ff0 = 0.1
+
+        ########### TODO: Average activity parameters ###########
+
+        # Target for adapting inhibition, initial estimated average value level
+        self.avg_act_targ_init = 0.2
+        # Used to calculate avg_p_act_eff
+        self.avg_act_adjust = 1.0
+        # If true, avg_act_p_eff is constant, set to avg_act_targ_init
+        self.avg_act_fixed = False
+        # If true, override targ_init value with first estimation
+        self.avg_act_use_first = False
+        # Time constant for integrating act_p_avg
+        self.avg_act_tau = False  # time constant for integrating act_p_avg
+
+        # Average activity of the layer. Computed after every step
+        self.avg_act = 0.0
+        self.avg_act_p_eff = self.avg_act_targ_init
+
+        ########### Utility ###########
+
+        for key, value in kwargs.items():
+            assert hasattr(self, key)  # making sure the parameter exists.
+            setattr(self, key, value)
+
+        # Log inhibitory conductance
+        self.logs = {'gc_i': []}
+
+    # Return the matrix of activities for neurons in this layer
+    @property
+    def activities(self):
+        return [n.act for n in self.neurons]
+
+    # Return the matrix of net excitatory input for neurons in this layer
+    @property
+    def g_e(self):
+        return [n.g_e for n in self.neurons]
+
+    # Add layer's excitatory inputs to the layer's neurons
+    def add_excitatory(self, inputs):
+        assert len(inputs) == len(self.neurons)
+        for n, net_raw in zip(self.neurons, inputs):
+            n.add_excitatory(net_raw)
+
+    # Set the neuron's activities equal to the inputs
+    def force_activity(self, activities):
+        assert len(activities) == len(self.neurons)
+        for n, act in zip(self.neurons, activities):
+            n.force_activity(act)
+
+
+    ################  Inhibition  ################
+
+
+    # Compute the inhibition for the layer
+    def inhibition(self):
+
+        if self.lay_inhib:
+            # Calculate net input for feed-forward inhibition
+            netin = [u.g_e for u in self.neurons]
+            # Calculate feed-forward inhibition
+            self.ffi = self.ff * max(0, np.mean(netin) - self.ff0)
+
+            # Calculate feed-back inhibition
+            self.fbi += self.fb_dt * (self.fb * self.avg_act - self.fbi)
+
+            # Return overall inhibitory conductance
+            return self.inhib_gain * (self.ffi + self.fbi)
+        else:
+            return 0.0
+
+
+    ################  Temporal process control  ################
+
+
+    # Advance the layer one time-step, and all the neurons in it
+    def step(self, phase):
+
+        # Calculate the net inputs for this layer
+        for n in self.neurons:
+            n.calculate_net_input()
+
+        # TODO: If minus phase, perform inhibition
+        if phase == 'minus':
+            self.gc_i = self.inhibition()
+
+        # Advance the neurons in the layer one time-step
+        for n in self.neurons:
+            n.step(phase, g_i=self.gc_i)
+
+        # Compute the average activity of the layer
+        self.avg_act = np.mean(self.activities)
+
+        # Update logs
+        self.update_logs()
+
+        # Indicate that the layer has been advanced one time-step
+        self.step_count += 1
+
+    # Initialize the layer for a new cycle
+    def cycle_init(self):
+
+        # Reset all neurons
+        for u in self.neurons:
+            u.reset()
+
+        # TODO: Decay fbi
+        self.ffi -= self.cycle_decay * self.ffi
+        self.fbi -= self.cycle_decay * self.fbi
+
+
+    ################  Logs/config  ################
+
+
+    # Show the layer's configurations
+    def show_config(self):
+        print('Parameters:')
+        for name in ['fb_dt', 'ff0', 'ff', 'fb', 'inhib_gain']:
+            print('   {}: {:.2f}'.format(name, getattr(self, name)))
+        print('State:')
+        for name in ['gc_i', 'fbi', 'ffi']:
+            print('   {}: {:.2f}'.format(name, getattr(self, name)))
+
+    # Record the layer's current state. Called after each step
+    def update_logs(self):
+        self.logs['gc_i'].append(self.gc_i)

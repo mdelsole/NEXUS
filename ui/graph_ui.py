@@ -41,6 +41,7 @@ class MainWindow(QtWidgets.QMainWindow):
         pen = pg.mkPen(color=color, width=5)
         self.graphWidget.plot(x, y, name=plotname, pen=pen)
 
+
 def compute_neurons():
     log_names = ('net_input', 'I_net', 'v_m', 'act', 'v_m_eq', 'adapt_curr', 'avg_ss', 'avg_s', 'avg_m', 'avg_s_eff')
 

@@ -108,7 +108,6 @@ class Neuron:
 
         # Computed once every cycle. Thus the full integration (reaching 1) will be complete after 10 cycles
         self.avg_l_dt = 0.1
-
         self.avg_l_min = 0.2
         self.avg_l_gain = 2.5
 
@@ -172,13 +171,23 @@ class Neuron:
     def net_input(self):
         return self.g_bar_e * self.g_e
 
-    # TODO: Force the activity of the unit
+    # TODO: Force the activity of the neuron
     def force_activity(self, act_ext):
         assert len(self.excitatory_inputs) == 0
 
         # Forced activity
         self.act_ext = act_ext
-        self.force_activity(self)
+
+        self.g_e = self.act_ext / self.g_bar_e  # neuron.net == neuron.act
+        # cycle
+        self.I_net = 0.0
+        self.act = self.act_ext
+        self.act_nd = self.act_ext
+        if self.act == 0:
+            self.v_m = self.e_l
+        else:
+            self.v_m = self.act_thr + self.act_ext / self.act_gain
+        self.v_m_eq = self.v_m
 
     # Add an input for the next step
     def add_excitatory(self, inp_act):
@@ -298,12 +307,12 @@ class Neuron:
                        + gc_l * (self.e_l - self.act_thr)
                        - self.adapt_curr) / (self.act_thr - self.e_e)
 
-            new_act = self.nxx1(gc_e - g_e_thr)  # gc_e == unit.net
-
+            new_act = self.nxx1(gc_e - g_e_thr)  # gc_e == neuron.net
 
         # Update activity
         self.act_nd += self.integ_dt * self.v_m_dt * (new_act - self.act_nd)
-        self.act = self.act_nd # FIXME: implement stp
+        # TODO: Implement stp
+        self.act = self.act_nd
 
         # Update adaptation
         if self.adapt_on:
@@ -349,6 +358,7 @@ class Neuron:
         self.avg_l = max(self.avg_l, self.avg_l_min)
 
     # TODO: For self-organizing learning
+    @property  # Property lets us access a method like an attribute
     def avg_l_lrn(self):
         # No self-organization unless hidden layer
         if self.neuron_type != HIDDEN:
