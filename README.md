@@ -4,7 +4,7 @@
 
 This is a biologically-inspired approach to creating a neural network.
 
-## Algorithms and Mechanics
+## Architecture: Algorithms and Mechanics
 Singular neuron level:
 
 - [x] Hodgkin-huxley model of neuron membrane potential updates
@@ -12,17 +12,31 @@ Singular neuron level:
 
 Synapse level:
 
-- [ ] Spike-timing-dependent plasticity
-- [ ] Long-term depression and long-term potentiation
+- [x] Spike-timing-dependent plasticity
+- [x] Long-term depression and long-term potentiation
 
 Singular layer level:
-
-- [ ] Self-organizing learning via intrinsic biological properties of synapses
-- [ ] Inhibition
+- [x] Self-organizing learning via intrinsic biological properties of synapses
+- [x] Inhibition
 
 Cross-layer (network) level:
 
-- [ ] Bi-directional connectivity
+- [x] Bi-directional connectivity
+
+Code needs to be cleaned up and optimized, but it works.
+
+## Visual Pathway
+### Relevant Areas:
+Ventral Stream (Object recognition)
+- [ ] LGN
+- [ ] V1
+- [ ] V2
+- [ ] V4
+- [ ] PIT
+- [ ] AIT
+
+Dorsal Stream (Branching off of V1)
+- [ ] ??? (Future work)
 
 ## UI Features
 Not much, but hey I'm only one person
