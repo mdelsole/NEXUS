@@ -2,7 +2,7 @@
 
 **Nexus**: A specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
 
-This is a WIP biologically-inspired approach to creating a neural network.
+This is a WIP biologically-inspired approach to creating a neural network for object recognition, and eventually artificial imagination.
 
 ## Architecture: Algorithms and Mechanics
 Singular neuron level:
@@ -29,7 +29,7 @@ Code needs to be cleaned up and optimized, but it works.
 
 ## Visual Pathway
 ### Relevant Areas:
-Ventral Stream (Object recognition)
+Ventral Stream ("What" recognition)
 - [ ] LGN
 - [ ] V1
 - [ ] V2
@@ -37,13 +37,17 @@ Ventral Stream (Object recognition)
 - [ ] PIT
 - [ ] AIT
 
-Dorsal Stream (Branching off of V1)
+Dorsal Stream ("Where/how" recognition, branching off of V1)
 - [ ] ??? (Future work)
 
 ## UI Features
 Not much, but hey I'm only one person
 
 - [x] Graph of individual neuron test firing
+- [ ] Runnable
+- [ ] Parameter modification
+- [ ] Network visualization
+- [ ] Different view tabs
 
 ## Sources
 * Hodgkin-Huxely Model: https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model
