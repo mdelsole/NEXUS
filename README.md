@@ -1,6 +1,6 @@
 # NEXUS
 
-**Nexus**: A specialized area of the cell membrane involved in intercellular communication and adhesion; a synapse.
+**Nexus**: A specialized layer of the cell membrane involved in intercellular communication and adhesion; a synapse.
 
 This is a WIP biologically-inspired approach to creating a neural network for object recognition, and eventually artificial imagination.
 
@@ -28,7 +28,7 @@ Cross-layer (network) level:
 Code needs to be cleaned up and optimized, but it works.
 
 ## Visual Pathway
-### Relevant Areas:
+### Relevant Layers:
 Ventral Stream ("What" recognition)
 - [ ] LGN
 - [ ] V1

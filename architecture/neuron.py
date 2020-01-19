@@ -1,6 +1,6 @@
 """
 
-Generate one area of neurons
+Generate one layer of neurons
 
 """
 
@@ -360,7 +360,7 @@ class Neuron:
     # TODO: For self-organizing learning
     @property  # Property lets us access a method like an attribute
     def avg_l_lrn(self):
-        # No self-organization unless hidden area
+        # No self-organization unless hidden layer
         if self.neuron_type != HIDDEN:
             return 0.0
         avg_fact = (self.avg_lrn_max - self.avg_lrn_min)/(self.avg_l_gain - self.avg_l_min)

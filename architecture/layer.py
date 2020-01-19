@@ -1,6 +1,6 @@
 """
 
-Singular area dynamics
+Singular layer dynamics
 
 """
 
@@ -9,25 +9,25 @@ import numpy as np
 from .neuron import Neuron, INPUT, HIDDEN, OUTPUT
 
 
-# TODO: Become area, be an input/hidden/output area
-class Area:
+# TODO: Become layer, be an input/hidden/output layer
+class Layer:
 
     def __init__(self, size, neuron_type=HIDDEN, name=None, **kwargs):
-        # What type of neurons are in this area
+        # What type of neurons are in this layer
         self.neuron_type = neuron_type
 
-        # Set the name of this area
+        # Set the name of this layer
         self.name = name
 
-        # Create the neurons of the area, with number denoted by input parameter 'size'
+        # Create the neurons of the layer, with number denoted by input parameter 'size'
         self.neurons = [Neuron(neuron_type=neuron_type) for _ in range(size)]
 
-        # Projections from this area to other areas
+        # Projections from this layer to other layers
         self.outgoing_projections = []
-        # Projections to this area from other areas
+        # Projections to this layer from other layers
         self.incoming_projections = []
 
-        # Current step count for area
+        # Current step count for layer
         self.step_count = 0
 
 
@@ -46,7 +46,7 @@ class Area:
         # Time-step constant for integration of feed-back inhibition
         self.fb_dt = 1 / 1.4
 
-        # TODO: In-out areas: 1.0, 1.0, 1.8. Hidden Areas: 1.0, 0.5, 2.0?
+        # TODO: In-out layers: 1.0, 1.0, 1.8. Hidden Layers: 1.0, 0.5, 2.0?
         # Feed-forward inhibition gain factor (for scaling)
         self.ff = 1.0
         # Feed-back inhibition gain factor (for scaling)
@@ -73,7 +73,7 @@ class Area:
         # Time constant for integrating act_p_avg
         self.avg_act_tau = False  # time constant for integrating act_p_avg
 
-        # Average activity of the area. Computed after every step
+        # Average activity of the layer. Computed after every step
         self.avg_act = 0.0
         self.avg_act_p_eff = self.avg_act_targ_init
 
@@ -86,12 +86,12 @@ class Area:
         # Log inhibitory conductance
         self.logs = {'gc_i': []}
 
-    # Return the matrix of activities for neurons in this area
+    # Return the matrix of activities for neurons in this layer
     @property
     def activities(self):
         return [n.act for n in self.neurons]
 
-    # Return the matrix of net excitatory input for neurons in this area
+    # Return the matrix of net excitatory input for neurons in this layer
     @property
     def net_inputs(self):
         return [n.g_e for n in self.neurons]
@@ -106,11 +106,11 @@ class Area:
     ################  Inhibition  ################
 
 
-    # Compute the inhibition for the area
+    # Compute the inhibition for the layer
     def inhibition(self):
 
         if self.lay_inhib:
-            # Retrieve net inputs of neurons in this area for feed-forward inhibition
+            # Retrieve net inputs of neurons in this layer for feed-forward inhibition
             _net_inputs = self.net_inputs
             # Calculate feed-forward inhibition
             self.ffi = self.ff * max(0, np.mean(_net_inputs) - self.ff0)
@@ -127,10 +127,10 @@ class Area:
     ################  Temporal process control  ################
 
 
-    # Advance the area one time-step, and all the neurons in it
+    # Advance the layer one time-step, and all the neurons in it
     def step(self, phase):
 
-        # Calculate the net inputs for the neurons this area
+        # Calculate the net inputs for the neurons this layer
         for n in self.neurons:
             n.calculate_net_input()
 
@@ -138,20 +138,20 @@ class Area:
         if phase == 'minus':
             self.gc_i = self.inhibition()
 
-        # Advance the neurons in the area one time-step, set their inhibition
+        # Advance the neurons in the layer one time-step, set their inhibition
         for n in self.neurons:
             n.step(phase, g_i=self.gc_i)
 
-        # Compute the average activity of the area
+        # Compute the average activity of the layer
         self.avg_act = np.mean(self.activities)
 
         # Update logs
         self.update_logs()
 
-        # Indicate that the area has been advanced one time-step
+        # Indicate that the layer has been advanced one time-step
         self.step_count += 1
 
-    # Initialize the area for a new cycle
+    # Initialize the layer for a new cycle
     def cycle_init(self):
 
         # Reset all neurons
@@ -166,7 +166,7 @@ class Area:
     ################  Logs/config  ################
 
 
-    # Show the area's configurations
+    # Show the layer's configurations
     def show_config(self):
         print('Parameters:')
         for name in ['fb_dt', 'ff0', 'ff', 'fb', 'inhib_gain']:
@@ -175,6 +175,6 @@ class Area:
         for name in ['gc_i', 'fbi', 'ffi']:
             print('   {}: {:.2f}'.format(name, getattr(self, name)))
 
-    # Record the area's current state. Called after each step
+    # Record the layer's current state. Called after each step
     def update_logs(self):
         self.logs['gc_i'].append(self.gc_i)

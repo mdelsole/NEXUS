@@ -22,22 +22,22 @@ class Synapse:
         self.dwt = 0.0
 
 
-# Projection is a connection between two areas
+# Projection is a connection between two layers
 class Projection:
 
-    def __init__(self, pre_area, post_area, **kwargs):
+    def __init__(self, pre_layer, post_layer, **kwargs):
 
-        # The area sending its activity
-        self.pre = pre_area
-        # The area receiving the activity
-        self.post = post_area
+        # The layer sending its activity
+        self.pre = pre_layer
+        # The layer receiving the activity
+        self.post = post_layer
         self.synapses = []
 
         ########### Parameters ###########
 
         # Is this and inhibitory projection? TODO: Inhibitory projections not yet implemented
         self.inhib = True
-        # Connection pattern for projections. 'full' or '1to1', with 1to1 requiring areas be the same size
+        # Connection pattern for projections. 'full' or '1to1', with 1to1 requiring layers be the same size
         self.proj = 'full'
 
         ########### Random weight initialization parameters ###########
@@ -77,7 +77,7 @@ class Projection:
         # Relative scaling weight, weight normalized by the other projections
         self.wt_scale_rel = 1.0
 
-        # Scale the area's inputs relative to activity
+        # Scale the layer's inputs relative to activity
         self.wt_scale_act = 1.0
         # Effective relative scaling weight, scaling relative to other projections
         self.wt_scale_rel_eff = None
@@ -85,10 +85,10 @@ class Projection:
         # Connect projected synapses
         self.projection_init()
 
-        # Add this projection to the pre-area's list of outgoing projections
-        pre_area.outgoing_projections.append(self)
-        # Add this projection to the post-area's list of incoming projections
-        post_area.incoming_projections.append(self)
+        # Add this projection to the pre-layer's list of outgoing projections
+        pre_layer.outgoing_projections.append(self)
+        # Add this projection to the post-layer's list of incoming projections
+        post_layer.incoming_projections.append(self)
 
         for key, value in kwargs.items():
             assert hasattr(self, key)
@@ -181,9 +181,9 @@ class Projection:
     # Compute net input scaling for projections
     def compute_netin_scaling(self):
 
-        # Pre-area average activity
+        # Pre-layer average activity
         pre_avg_act = self.pre.avg_act_p_eff
-        # Pre-area size
+        # Pre-layer size
         pre_size = len(self.pre.neurons)
         # Number of synapses in this projection
         num_synapses = len(self.synapses)
@@ -225,11 +225,11 @@ class Projection:
                 fw0 = self.sig_inv(w0)
                 self.synapses.append(Synapse(pre_u, post_u, w0, fw0, index=(i, j)))
 
-    # Project one pre-neuron to one post-neuron for every neuron in the areas
+    # Project one pre-neuron to one post-neuron for every neuron in the layers
     def _1to1_projection(self):
         # Store the neuron to neuron synapses
         self.synapses = []
-        # 1to1 MUST have same area size
+        # 1to1 MUST have same layer size
         assert len(self.pre.neurons) == len(self.post.neurons)
         for i, (pre_u, post_u) in enumerate(zip(self.pre.neurons, self.post.neurons)):
             w0 = self._rnd_wt()
