@@ -45,9 +45,9 @@ Not much, but hey I'm only one person
 
 - [x] Graph of individual neuron test firing
 - [ ] Runnable
-- [ ] Parameter modification
+- [x] Parameter modification
 - [ ] Network visualization
-- [ ] Different view tabs
+- [x] Different view tabs
 
 ## Sources
 * Hodgkin-Huxely Model: https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model
