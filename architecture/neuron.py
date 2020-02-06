@@ -171,7 +171,7 @@ class Neuron:
     def net_input(self):
         return self.g_bar_e * self.g_e
 
-    # TODO: Force the activity of the neuron
+    # Force the activity of the neuron. Used for setting the inputs, or triggering top-down activation via outputs
     def force_activity(self, act_ext):
         assert len(self.excitatory_inputs) == 0
 

@@ -10,9 +10,10 @@ from pyqtgraph.parametertree import types as pTypes
 import pyqtgraph.configfile
 from pyqtgraph.dockarea import *
 
-from ui import network_runner
+from ui import network_runner, input_test
 
 network = network_runner.network_runner()
+
 
 class NexusGUI(QtGui.QWidget):
     def __init__(self):
@@ -20,6 +21,8 @@ class NexusGUI(QtGui.QWidget):
 
         # Handling display
         self.layers_displayed = []
+        # Keep track of the docks
+        self.displays = []
 
         pg.setConfigOption('background', (190, 190, 190))
 
@@ -36,8 +39,7 @@ class NexusGUI(QtGui.QWidget):
                 dict(name='Real-time Animation', type='bool', value=True),
                 dict(name='Animation Speed', type='float', value=1.0, dec=True, step=0.1, limits=[0.0001, None]),
                 dict(name='Build Network', type='action'),
-                dict(name='Run Network', type='action'),
-                dict(name='Display', type='action'),
+                dict(name='Train Network', type='action'),
                 dict(name='Save', type='action'),
                 dict(name='Load', type='action'),
             ])
@@ -47,8 +49,7 @@ class NexusGUI(QtGui.QWidget):
 
         # Actions
         self.control_tree_params.param('Build Network').sigActivated.connect(self.build_network)
-        self.control_tree_params.param('Run Network').sigActivated.connect(self.run_network)
-        self.control_tree_params.param('Display').sigActivated.connect(self.display)
+        self.control_tree_params.param('Train Network').sigActivated.connect(self.train_network)
         self.control_tree_params.param('Save').sigActivated.connect(self.save)
         self.control_tree_params.param('Load').sigActivated.connect(self.load)
         self.control_tree_params.sigTreeStateChanged.connect(self.control_tree_changed)
@@ -115,8 +116,7 @@ class NexusGUI(QtGui.QWidget):
         self.area = DockArea()
         self.splitter.addWidget(self.area)
 
-        # Placeholder starter
-        self.init_dock = self.visualize_layer(np.array(([0.0, 1.0], [0.0, 0.0])), "Input")
+        self.init_dock = self.visualize_layer(input_test.leftdiag_2d, "Input")
         self.init_dock_closed = False
 
     def visualize_layer(self, data, layer_name):
@@ -137,6 +137,7 @@ class NexusGUI(QtGui.QWidget):
 
         # Add the dock to the area
         self.area.addDock(d1)
+        self.displays.append(view.addedItems)
         return d1
 
 
@@ -152,30 +153,40 @@ class NexusGUI(QtGui.QWidget):
     def builder_tree_changed(self, *args):
         print("tree changes:", args[1])
         for param, change, data in args[1]:
-            if change == 'childAdded':
-                for cl in self.builder_tree_params.param('Components'):
-                    for child in cl.children():
-                        if child.type() == 'Projection':
-                            child.setLayers()
-
+            print(change)
+            # if change == 'childAdded':
+            if change == 'activated':
+                if param.name() == 'Add layer to network':
+                    x, name, new = param.parent().buildLayer()
+                    if new:
+                        self.visualize_layer(x, name)
+                        print([layer.name for layer in network.layers])
+                    for cl in self.builder_tree_params.param('Components'):
+                        for child in cl.children():
+                            print(child)
+                            if child.type() == 'Projection':
+                                print("Here")
+                                child.__init__()
+                elif param.name() == 'Add projection to network':
+                    x = param.parent().addProjection()
 
 
     ################  Control panel actions  ################
 
-    def display(self):
-        pass
 
-    def run_network(self):
-        network.train_network()
+    def train_network(self):
+        for i in range(50):
+            x = network.train_network(input_test.leftdiag, input_test.rightdiag)
+            self.displays[1][0].setImage(x)
 
     def build_network(self):
-        #x = network_runner.run(25)
-        #self.visualize_layer(x, "V1")
 
         # First time, close placeholder network
-        #if not self.init_dock_closed:
-            #self.init_dock.close()
+        # if not self.init_dock_closed:
+            # self.init_dock.close()
 
+        network.build_network()
+        """
         for cl in self.builder_tree_params.param('Components'):
             for child in cl.children():
                 if child.type() == 'Layer':
@@ -185,6 +196,7 @@ class NexusGUI(QtGui.QWidget):
                         print([layer.name for layer in network.layers])
                 if child.type() == 'Projection':
                     pass
+        """
 
 
     ################  Save/Load  ################
@@ -246,7 +258,7 @@ class LayerParam(pTypes.GroupParameter):
     def __init__(self, **kwds):
 
         # Define the layer group
-        defs = dict(name="Layer", autoIncrementName=True, type='Layer', renamable=True, removable=True, children=[
+        self.defs = dict(name="Layer", autoIncrementName=True, type='Layer', renamable=True, removable=True, children=[
             dict(name='Show', type='bool', value=True),
             dict(name='Size', type='int', value=25),
             dict(name='Type', type='list', values=['INPUT', 'HIDDEN', 'OUTPUT'], value='INPUT'),
@@ -254,9 +266,10 @@ class LayerParam(pTypes.GroupParameter):
             dict(name='Inhibitory Gain', type='float', value=2.0, step=0.1),
             dict(name='Feedforward inhibitory gain', type='float', value=1.0, step=0.1),
             dict(name='Feedbackward inhibitory gain', type='float', value=0.5, step=0.1),
+            dict(name='Add layer to network', type='action'),
             NeuronGroup(),
         ])
-        pTypes.GroupParameter.__init__(self, **defs)
+        pTypes.GroupParameter.__init__(self, **self.defs)
         self.restoreState(kwds, removeChildren=False)
 
     def buildLayer(self):
@@ -272,10 +285,11 @@ class LayerParam(pTypes.GroupParameter):
         return newLayer
 
 
-    def layerName(self):
-        return self.name()
+    def add_to_network(self):
+        self.buildLayer()
 
 
+# Neuron specifications for the layer
 class NeuronGroup(pTypes.GroupParameter):
     def __init__(self, **kwds):
         defs = dict(name="Neuron Settings", autoIncrementName=True, type='Neuron', renamable=True, removable=True, children=[
@@ -295,10 +309,11 @@ class NeuronGroup(pTypes.GroupParameter):
 # Add a projection
 class ProjectionParam(pTypes.GroupParameter):
     def __init__(self, **kwds):
-        print([layer.name for layer in network.layers])
+        print("here", [layer.name for layer in network.layers])
         self.defs = dict(name="Projection", autoIncrementName=True, type='Projection', renamable=True, removable=True, children=[
             dict(name='Layer from', type='list', values=[layer.name for layer in network.layers]),
             dict(name='Layer to', type='list', values=[layer.name for layer in network.layers]),
+            dict(name='Add projection to network', type='action'),
         ])
         pTypes.GroupParameter.__init__(self, **self.defs)
         self.restoreState(kwds, removeChildren=False)
@@ -307,7 +322,7 @@ class ProjectionParam(pTypes.GroupParameter):
         layer_from = self['Layer from']
         layer_to = self['Layer to']
 
-        newLayer = network.addLayer(size=layer_from, neuron_type=layer_to)
+        newLayer = network.add_projection(layer_from, layer_to)
         return newLayer
 
     def setLayers(self):

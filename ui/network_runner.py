@@ -14,6 +14,7 @@ class network_runner:
         self.hidden_layers = []
         self.output_layers = []
         self.projections = []
+        self.network = None
 
 
     ################  Layer control  ################
@@ -53,54 +54,72 @@ class network_runner:
 
     ################  Projection control  ################
 
+    def add_projection(self, from_layer, to_layer):
+
+        for i in self.layers:
+            if from_layer == i.name:
+                sending_layer = i
+            if to_layer == i.name:
+                receiving_layer = i
+
+        if sending_layer is not None and receiving_layer is not None:
+            newProjection = connection.Projection(sending_layer, receiving_layer)
+            self.projections.append(newProjection)
+        else:
+            print("projection layer arguments error")
 
 
     ################  Builder  ################
-    """
+
     
-    def build_network(self, network_layers):
+    def build_network(self):
     
-        projections = []
-        for i in range(len(hidden_layers)):
-            hidden_conn = connection.Projection(layers[-1],  hidden_layer)
-            layers.append(hidden_layer)
-            projections.append(hidden_conn)
+        print("Layers: ")
+        for i in self.layers:
+            print(i.name)
+        print("Projections: ")
+        for i in self.projections:
+            print("From_layer: ", i.pre.name, " To_layer: ", i.post.name)
+        self.network = NEXUS.Network(layers=self.layers, projections=self.projections)
     
-        last_conn  = connection.Projection(layers[-1],  output_layer)
-        projections.append(last_conn)
-        layers.append(output_layer)
+        return self.network
     
-        network = NEXUS.Network(layers=layers, projections=projections)
-    
-        return network
-    
-    
+
     ################  Train/test  ################
     
     
     # Test the network with one additional cycle
-    def test_network(network, input_pattern):
-        assert len(network.layers[0].neurons) == len(input_pattern)
-        network.set_inputs({'input_layer': input_pattern})
+    def test_network(self, input_pattern):
+        assert len(self.network.layers[0].neurons) == len(input_pattern)
+        self.network.set_inputs({'input_layer': input_pattern})
     
-        network.cycle()
-        return [neuron.act_m for neuron in network.layers[-1].neurons]
+        self.network.cycle()
+        return [neuron.act_m for neuron in self.network.layers[-1].neurons]
     
     
     # Run one cycle for the network
-    def train_network(network, input_pattern, output_pattern):
-        network.set_inputs({'input_layer': input_pattern})
-        network.set_outputs({'output_layer': output_pattern})
+    def train_network(self, input_pattern, output_pattern):
+
+        # Force the activity of the inputs and outputs
+        self.network.set_inputs({self.input_layers[0].name: input_pattern})
+        self.network.set_outputs({self.output_layers[0].name: output_pattern})
     
-        sse = network.cycle()
-        print('{} sse={}'.format(network.cycle_count, sse))
-        return [neuron.act_m for neuron in network.layers[-1].neurons]
+        sse = self.network.cycle()
+        print('{} sse={}'.format(self.network.cycle_count, sse))
+
+        # Th activities of neurons of the layers
+        activities = [neuron.act_m for neuron in self.network.layers[-1].neurons]
+
+        # Reshape into square 2d matrix for displaying
+        size = np.size(activities)
+        shape = int(size ** (1 / 2))
+        display = np.reshape(activities, (-1, shape))
+
+        return display
     
     
-    def run_test(size):
-    
-    
-        network = build_network(size, size, 2)
+    def run_test(self):
+
         horizontal = 10*[0.0] + 5*[1.0] + 10*[0.0]
         vertical   = 5*[0.0, 0.0, 1.0, 0.0, 0.0]
         leftdiag   = [1.0, 0.0, 0.0, 0.0, 0.0,
@@ -115,8 +134,7 @@ class network_runner:
                        1.0, 0.0, 0.0, 0.0, 0.0]
     
         for i in range(5):
-            train_network(network, horizontal, horizontal)
-            train_network(network, vertical, vertical)
-            train_network(network, leftdiag, leftdiag)
-            train_network(network, rightdiag, rightdiag)
-    """
+            self.train_network(self.network, horizontal, horizontal)
+            self.train_network(self.network, vertical, vertical)
+            self.train_network(self.network, leftdiag, leftdiag)
+            self.train_network(self.network, rightdiag, rightdiag)
