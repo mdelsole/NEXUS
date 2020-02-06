@@ -1,6 +1,6 @@
 from architecture import neuron, layer, connection, NEXUS
 import random
-random.seed(0)
+random.seed(2)
 import numpy as np
 
 class network_runner:

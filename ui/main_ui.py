@@ -1,7 +1,5 @@
-import numpy as np
-import collections
-import sys, os
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QTabWidget, QVBoxLayout
+import sys
+from PyQt5.QtWidgets import QWidget, QDesktopWidget, QTabWidget, QVBoxLayout
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore
@@ -10,8 +8,9 @@ from pyqtgraph.parametertree import types as pTypes
 import pyqtgraph.configfile
 from pyqtgraph.dockarea import *
 
-from ui import network_runner, input_test
-
+from ui import network_runner
+from tests import input_test
+import numpy as np
 network = network_runner.network_runner()
 
 
@@ -19,10 +18,11 @@ class NexusGUI(QtGui.QWidget):
     def __init__(self):
         QtGui.QWidget.__init__(self)
 
-        # Handling display
-        self.layers_displayed = []
         # Keep track of the docks
         self.displays = []
+
+        # Keep track of display animation
+        self.timer = QtCore.QTimer(self)
 
         pg.setConfigOption('background', (190, 190, 190))
 
@@ -35,11 +35,11 @@ class NexusGUI(QtGui.QWidget):
         self.control_tree_params = Parameter.create(name='control_tree_params', type='group',
             children=[
                 dict(name='Duration', type='float', value=10.0, step=0.1, limits=[0.1, None]),
-                dict(name='Reference Frame', type='list', values=[]),
                 dict(name='Real-time Animation', type='bool', value=True),
                 dict(name='Animation Speed', type='float', value=1.0, dec=True, step=0.1, limits=[0.0001, None]),
                 dict(name='Build Network', type='action'),
                 dict(name='Train Network', type='action'),
+                dict(name='Stop', type='action'),
                 dict(name='Save', type='action'),
                 dict(name='Load', type='action'),
             ])
@@ -50,6 +50,7 @@ class NexusGUI(QtGui.QWidget):
         # Actions
         self.control_tree_params.param('Build Network').sigActivated.connect(self.build_network)
         self.control_tree_params.param('Train Network').sigActivated.connect(self.train_network)
+        self.control_tree_params.param('Stop').sigActivated.connect(self.stop)
         self.control_tree_params.param('Save').sigActivated.connect(self.save)
         self.control_tree_params.param('Load').sigActivated.connect(self.load)
         self.control_tree_params.sigTreeStateChanged.connect(self.control_tree_changed)
@@ -131,7 +132,7 @@ class NexusGUI(QtGui.QWidget):
         img = pg.ImageItem(border='w')
         img.setLevels([])
         view.addItem(img)
-        img.setImage(data)
+        img.setImage(np.rot90(data,-1))
 
         d1.addWidget(networkVisual)
 
@@ -175,9 +176,15 @@ class NexusGUI(QtGui.QWidget):
 
 
     def train_network(self):
-        for i in range(50):
-            x = network.train_network(input_test.leftdiag, input_test.rightdiag)
-            self.displays[1][0].setImage(x)
+        self.timer.timeout.connect(self.train2)
+        self.timer.start(16)
+
+    def train2(self):
+        x = network.train_network(input_test.leftdiag, input_test.leftdiag)
+        self.displays[1][0].setImage(np.rot90(x,-1))
+
+    def stop(self):
+        self.timer.stop()
 
     def build_network(self):
 
