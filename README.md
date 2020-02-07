@@ -44,10 +44,14 @@ Dorsal Stream ("Where/how" recognition, branching off of V1)
 Not much, but hey I'm only one person
 
 - [x] Graph of individual neuron test firing
-- [ ] Runnable
+- [x] Runnable
 - [x] Parameter modification
-- [ ] Network visualization
+- [x] Network visualization
 - [x] Different view tabs
+- [ ] Multi-processing
+- [ ] Multi-threading
+- [ ] Optimization
+- [ ] Save/Load network configuration
 
 ## Sources
 * Hodgkin-Huxely Model: https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model
