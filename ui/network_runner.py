@@ -116,25 +116,3 @@ class network_runner:
         display = np.reshape(activities, (-1, shape))
 
         return display
-    
-    
-    def run_test(self):
-
-        horizontal = 10*[0.0] + 5*[1.0] + 10*[0.0]
-        vertical   = 5*[0.0, 0.0, 1.0, 0.0, 0.0]
-        leftdiag   = [1.0, 0.0, 0.0, 0.0, 0.0,
-                       0.0, 1.0, 0.0, 0.0, 0.0,
-                       0.0, 0.0, 1.0, 0.0, 0.0,
-                       0.0, 0.0, 0.0, 1.0, 0.0,
-                       0.0, 0.0, 0.0, 0.0, 1.0]
-        rightdiag  = [0.0, 0.0, 0.0, 0.0, 1.0,
-                       0.0, 0.0, 0.0, 1.0, 0.0,
-                       0.0, 0.0, 1.0, 0.0, 0.0,
-                       0.0, 1.0, 0.0, 0.0, 0.0,
-                       1.0, 0.0, 0.0, 0.0, 0.0]
-    
-        for i in range(5):
-            self.train_network(self.network, horizontal, horizontal)
-            self.train_network(self.network, vertical, vertical)
-            self.train_network(self.network, leftdiag, leftdiag)
-            self.train_network(self.network, rightdiag, rightdiag)

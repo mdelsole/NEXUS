@@ -9,6 +9,7 @@ def do_something():
 
 # Define the processes
 
+
 # Not do_something(); we don't want to pass in the return value of the function
 p1 = multiprocessing.Process(target=do_something)
 p2 = multiprocessing.Process(target=do_something)

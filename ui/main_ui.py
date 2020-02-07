@@ -5,11 +5,9 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore
 from pyqtgraph.parametertree import Parameter, ParameterTree
 from pyqtgraph.parametertree import types as pTypes
-import pyqtgraph.configfile
 from pyqtgraph.dockarea import *
 
-from ui import network_runner
-from tests import input_test
+from ui import network_runner, input_loader
 import numpy as np
 network = network_runner.network_runner()
 
@@ -23,6 +21,11 @@ class NexusGUI(QtGui.QWidget):
 
         # Keep track of display animation
         self.timer = QtCore.QTimer(self)
+        self.input_list = [[input_loader.leftdiag, input_loader.leftdiag_2d],
+                           [input_loader.vertical, input_loader.vertical_2d],
+                           [input_loader.rightdiag, input_loader.rightdiag_2d],
+                           [input_loader.horizontal, input_loader.horizontal_2d]]
+        self.index = 0
 
         pg.setConfigOption('background', (190, 190, 190))
 
@@ -40,8 +43,6 @@ class NexusGUI(QtGui.QWidget):
                 dict(name='Build Network', type='action'),
                 dict(name='Train Network', type='action'),
                 dict(name='Stop', type='action'),
-                dict(name='Save', type='action'),
-                dict(name='Load', type='action'),
             ])
 
         # Set the control panel tree
@@ -51,8 +52,6 @@ class NexusGUI(QtGui.QWidget):
         self.control_tree_params.param('Build Network').sigActivated.connect(self.build_network)
         self.control_tree_params.param('Train Network').sigActivated.connect(self.train_network)
         self.control_tree_params.param('Stop').sigActivated.connect(self.stop)
-        self.control_tree_params.param('Save').sigActivated.connect(self.save)
-        self.control_tree_params.param('Load').sigActivated.connect(self.load)
         self.control_tree_params.sigTreeStateChanged.connect(self.control_tree_changed)
 
         ########### Builder tree ###########
@@ -117,7 +116,7 @@ class NexusGUI(QtGui.QWidget):
         self.area = DockArea()
         self.splitter.addWidget(self.area)
 
-        self.init_dock = self.visualize_layer(input_test.leftdiag_2d, "Input")
+        self.init_dock = self.visualize_layer(input_loader.leftdiag_2d, "Input")
         self.init_dock_closed = False
 
     def visualize_layer(self, data, layer_name):
@@ -148,7 +147,6 @@ class NexusGUI(QtGui.QWidget):
     ## If anything changes in the tree, print a message
     def control_tree_changed(param, changes):
         pass
-        # print("tree changes:")
 
     ## If anything changes in the tree, print a message
     def builder_tree_changed(self, *args):
@@ -176,12 +174,22 @@ class NexusGUI(QtGui.QWidget):
 
 
     def train_network(self):
-        self.timer.timeout.connect(self.train2)
-        self.timer.start(16)
+        self.timer.timeout.connect(self.train_handler)
+        self.timer.start(1)
 
-    def train2(self):
-        x = network.train_network(input_test.leftdiag, input_test.leftdiag)
+
+    def train_handler(self):
+        # Change the input
+        self.displays[0][0].setImage(np.rot90(self.input_list[self.index][1]))
+
+        # Change the hidden layer
+        x = network.train_network(self.input_list[self.index][0], self.input_list[self.index][0])
         self.displays[1][0].setImage(np.rot90(x,-1))
+
+        # Cycle through
+        self.index += 1
+        if self.index > 3:
+            self.index = 0
 
     def stop(self):
         self.timer.stop()
@@ -193,68 +201,6 @@ class NexusGUI(QtGui.QWidget):
             # self.init_dock.close()
 
         network.build_network()
-        """
-        for cl in self.builder_tree_params.param('Components'):
-            for child in cl.children():
-                if child.type() == 'Layer':
-                    x, name, new = child.buildLayer()
-                    if new:
-                        self.visualize_layer(x, name)
-                        print([layer.name for layer in network.layers])
-                if child.type() == 'Projection':
-                    pass
-        """
-
-
-    ################  Save/Load  ################
-
-
-    def save(self):
-        fn = str(pg.QtGui.QFileDialog.getSaveFileName(self, "Save State..", "untitled.cfg", "Config Files (*.cfg)"))
-        if fn == '':
-            return
-        # TODO: Change to builder_tree_params
-        state = self.control_tree_params.saveState()
-        pg.configfile.writeConfigFile(state, fn)
-
-    def load(self):
-        fn = str(pg.QtGui.QFileDialog.getOpenFileName(self, "Save State..", "", "Config Files (*.cfg)"))
-        if fn == '':
-            return
-        state = pg.configfile.readConfigFile(fn)
-        self.loadState(state)
-
-    def loadState(self, state):
-        # TODO: Change to builder_tree_params
-        self.control_tree_params.param('Components').clearChildren()
-        self.control_tree_params.restoreState(state, removeChildren=False)
-        self.recalculate()
-
-
-################  Headers  ################
-
-
-class ComponentGroupParam(pTypes.GroupParameter):
-    def __init__(self):
-        pTypes.GroupParameter.__init__(self, name="Components")
-        self.addChild(LayerHeaderParam())
-        self.addChild(ProjectionHeaderParam())
-
-
-class LayerHeaderParam(pTypes.GroupParameter):
-    def __init__(self):
-        pTypes.GroupParameter.__init__(self, name="Layers", addText="Add New Layer")
-
-    def addNew(self):
-        self.addChild(LayerParam())
-
-
-class ProjectionHeaderParam(pTypes.GroupParameter):
-    def __init__(self):
-        pTypes.GroupParameter.__init__(self, name="Projections", addText="Add New Projection")
-
-    def addNew(self):
-        self.addChild(ProjectionParam())
 
 
 ################  Parameters  ################
@@ -334,6 +280,32 @@ class ProjectionParam(pTypes.GroupParameter):
 
     def setLayers(self):
         self.__init__()
+
+
+################  Headers  ################
+
+
+class ComponentGroupParam(pTypes.GroupParameter):
+    def __init__(self):
+        pTypes.GroupParameter.__init__(self, name="Components")
+        self.addChild(LayerHeaderParam())
+        self.addChild(ProjectionHeaderParam())
+
+
+class LayerHeaderParam(pTypes.GroupParameter):
+    def __init__(self):
+        pTypes.GroupParameter.__init__(self, name="Layers", addText="Add New Layer")
+
+    def addNew(self):
+        self.addChild(LayerParam())
+
+
+class ProjectionHeaderParam(pTypes.GroupParameter):
+    def __init__(self):
+        pTypes.GroupParameter.__init__(self, name="Projections", addText="Add New Projection")
+
+    def addNew(self):
+        self.addChild(ProjectionParam())
 
 
 ################  App runner  ################
