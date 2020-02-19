@@ -1,3 +1,9 @@
+"""
+Running outside of gui is more optimized, and allows for faster trial and error.
+Recommended workflow is build network outside of GUI first, and then implement it in the GUI for visual intuition.
+"""
+
+
 from architecture import neuron, layer, connection, NEXUS
 import random
 random.seed(2)
@@ -16,9 +22,7 @@ class network_runner:
         self.projections = []
         self.network = None
 
-
     ################  Layer control  ################
-
 
     def add_layer(self, size, name, neuron_type, lay_inhib, inhib_gain, ffi, fbi):
         newLayer = layer.Layer(size=size, neuron_type=neuron_type, name=name, lay_inhib=lay_inhib,
@@ -42,10 +46,10 @@ class network_runner:
             elif newLayer.neuron_type == "HIDDEN":
                 self.hidden_layers.append(newLayer)
             else:
-                assert(newLayer.neuron_type == "OUTPUT")
+                assert (newLayer.neuron_type == "OUTPUT")
                 self.output_layers.append(newLayer)
 
-        shape = int(size**(1/2))
+        shape = int(size ** (1 / 2))
 
         # Square array of the layer's neurons' activities
         activities = np.reshape([neuron.act_m for neuron in newLayer.neurons], (-1, shape))
@@ -68,12 +72,10 @@ class network_runner:
         else:
             print("projection layer arguments error")
 
-
     ################  Builder  ################
 
-    
     def build_network(self):
-    
+
         print("Layers: ")
         for i in self.layers:
             print(i.name)
@@ -81,29 +83,26 @@ class network_runner:
         for i in self.projections:
             print("From_layer: ", i.pre.name, " To_layer: ", i.post.name)
         self.network = NEXUS.Network(layers=self.layers, projections=self.projections)
-    
+
         return self.network
-    
 
     ################  Train/test  ################
-    
-    
+
     # Test the network with one additional cycle
     def test_network(self, input_pattern):
         assert len(self.network.layers[0].neurons) == len(input_pattern)
         self.network.set_inputs({'input_layer': input_pattern})
-    
+
         self.network.cycle()
         return [neuron.act_m for neuron in self.network.layers[-1].neurons]
-    
-    
+
     # Run one cycle for the network
     def train_network(self, input_pattern, output_pattern):
 
         # Force the activity of the inputs and outputs
         self.network.set_inputs({self.input_layers[0].name: input_pattern})
         self.network.set_outputs({self.output_layers[0].name: output_pattern})
-    
+
         sse = self.network.cycle()
         print('{} sse={}'.format(self.network.cycle_count, sse))
 
@@ -116,3 +115,4 @@ class network_runner:
         display = np.reshape(activities, (-1, shape))
 
         return display
+

@@ -116,6 +116,10 @@ class NexusGUI(QtGui.QWidget):
         self.area = DockArea()
         self.splitter.addWidget(self.area)
 
+        ########### Initial windows ###########
+
+        # We have the "input", the input layer, hidden
+
         self.init_dock = self.visualize_layer(input_loader.leftdiag_2d, "Input")
         self.init_dock_closed = False
 
@@ -233,7 +237,7 @@ class LayerParam(pTypes.GroupParameter):
         inhib_gain = self['Inhibitory Gain']
         ffi = self['Feedforward inhibitory gain']
         fbi = self['Feedbackward inhibitory gain']
-        newLayer = network.addLayer(size=size, neuron_type=type, name=name, lay_inhib=lay_inhib,
+        newLayer = network.add_layer(size=size, neuron_type=type, name=name, lay_inhib=lay_inhib,
                                inhib_gain=inhib_gain, ffi=ffi, fbi=fbi)
         return newLayer
 
