@@ -25,36 +25,19 @@ class network_runner:
     ################  Layer control  ################
 
     def add_layer(self, size, name, neuron_type, lay_inhib, inhib_gain, ffi, fbi):
-        newLayer = layer.Layer(size=size, neuron_type=neuron_type, name=name, lay_inhib=lay_inhib,
-                               inhib_gain=inhib_gain, ffi=ffi, fbi=fbi)
+        newLayer = layer.Layer(size=size**2, neuron_type=neuron_type, name=name, lay_inhib=lay_inhib,
+                               inhib_gain=inhib_gain, ff=ffi, fb=fbi)
 
-        new = True
-        # Check to see that this is an unique layer
-        for i in self.layers:
-            if i.name == newLayer.name:
-                print("Layer already exists, updating")
-                # TODO: Update
-                new = False
-
-        # If it's a unique layer, add it to the list of this network's layers
-        if new:
-            print("New layer added!")
-            self.layers.append(newLayer)
-            # Add the layer to correct subset
-            if newLayer.neuron_type == "INPUT":
-                self.input_layers.append(newLayer)
-            elif newLayer.neuron_type == "HIDDEN":
-                self.hidden_layers.append(newLayer)
-            else:
-                assert (newLayer.neuron_type == "OUTPUT")
-                self.output_layers.append(newLayer)
-
-        shape = int(size ** (1 / 2))
-
-        # Square array of the layer's neurons' activities
-        activities = np.reshape([neuron.act_m for neuron in newLayer.neurons], (-1, shape))
-
-        return activities, name, new
+        print("New layer added!")
+        self.layers.append(newLayer)
+        # Add the layer to correct subset
+        if newLayer.neuron_type == "INPUT":
+            self.input_layers.append(newLayer)
+        elif newLayer.neuron_type == "HIDDEN":
+            self.hidden_layers.append(newLayer)
+        else:
+            assert (newLayer.neuron_type == "OUTPUT")
+            self.output_layers.append(newLayer)
 
     ################  Projection control  ################
 
@@ -88,31 +71,18 @@ class network_runner:
 
     ################  Train/test  ################
 
-    # Test the network with one additional cycle
-    def test_network(self, input_pattern):
-        assert len(self.network.layers[0].neurons) == len(input_pattern)
-        self.network.set_inputs({'input_layer': input_pattern})
-
-        self.network.cycle()
-        return [neuron.act_m for neuron in self.network.layers[-1].neurons]
-
     # Run one cycle for the network
-    def train_network(self, input_pattern, output_pattern):
+    def train_network(self, input, output_pattern=None):
 
-        # Force the activity of the inputs and outputs
-        self.network.set_inputs({self.input_layers[0].name: input_pattern})
-        self.network.set_outputs({self.output_layers[0].name: output_pattern})
+        for i in input:
+            self.network.set_inputs(i)
 
         sse = self.network.cycle()
         print('{} sse={}'.format(self.network.cycle_count, sse))
 
-        # Th activities of neurons of the layers
-        activities = [neuron.act_m for neuron in self.network.layers[-1].neurons]
+    # Test the network with one additional cycle, and return the resulting activities
+    def test_network(self, input_pattern):
+        assert len(self.network.layers[0].neurons) == len(input_pattern)
 
-        # Reshape into square 2d matrix for displaying
-        size = np.size(activities)
-        shape = int(size ** (1 / 2))
-        display = np.reshape(activities, (-1, shape))
-
-        return display
-
+        self.network.cycle()
+        return [neuron.act_m for neuron in self.network.layers[-1].neurons]
